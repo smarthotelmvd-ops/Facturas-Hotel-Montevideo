@@ -99,6 +99,7 @@
   .origen-tag{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px;}
   .origen-bar{background:#e7f0e6; color:#2f5c39;}
   .origen-hotel{background:#e6eef2; color:#2c5a70;}
+  .origen-ambos{background:#f4ecd8; color:#6b5418;}
   .del{color:var(--clay); cursor:pointer; font-size:12px; font-weight:600; background:none; border:none; padding:0;}
   .empty{text-align:center; color:var(--muted); padding:30px 10px; font-size:13.5px;}
   .toolbar{display:flex; gap:8px; margin-bottom:14px;}
@@ -154,8 +155,9 @@
     <div class="card" id="formCard" style="display:none;">
       <label>Origen</label>
       <div class="pillrow">
-        <div class="pill" data-val="POLO BAMBA" onclick="selectPill(this,'origen')">Polo Bamba</div>
         <div class="pill" data-val="HOTEL" onclick="selectPill(this,'origen')">Hotel</div>
+        <div class="pill" data-val="POLO BAMBA" onclick="selectPill(this,'origen')">Polo Bamba</div>
+        <div class="pill" data-val="HOTEL Y PB" onclick="selectPill(this,'origen')">Hotel y PB</div>
       </div>
 
       <label>Proveedor</label>
@@ -203,6 +205,8 @@
         <option value="Transferencia">Transferencia</option>
         <option value="Cheque">Cheque</option>
         <option value="Caja Chica Hotel">Caja Chica Hotel</option>
+        <option value="Caja Chica PB">Caja Chica PB</option>
+        <option value="Tarjeta Lucia">Tarjeta Lucia</option>
         <option value="Efectivo">Efectivo</option>
         <option value="Otro">Otro</option>
       </select>
@@ -220,8 +224,9 @@
     <div class="toolbar">
       <select id="filtroOrigen" onchange="renderLista()">
         <option value="">Todos los orígenes</option>
-        <option value="POLO BAMBA">Polo Bamba</option>
         <option value="HOTEL">Hotel</option>
+        <option value="POLO BAMBA">Polo Bamba</option>
+        <option value="HOTEL Y PB">Hotel y PB</option>
       </select>
       <button class="btn btn-secondary" style="margin:0; width:auto; padding:9px 14px; font-size:13px;" onclick="descargarCSV()">Descargar CSV</button>
     </div>
@@ -699,7 +704,7 @@ async function guardarFactura(){
   const proveedor = document.getElementById('fProveedor').value.trim();
   const importe = document.getElementById('fImporte').value;
 
-  if(!origen){ alert('Elegí el origen: Polo Bamba u Hotel.'); return; }
+  if(!origen){ alert('Elegí el origen: Hotel, Polo Bamba u Hotel y PB.'); return; }
   if(!proveedor){ alert('Falta el proveedor.'); return; }
   if(!importe){ alert('Falta el importe.'); return; }
   if(!document.getElementById('fMetodo').value){ alert('Elegí el método de pago (Crédito, Transferencia, Caja Chica...).'); document.getElementById('fMetodo').focus(); return; }
@@ -793,7 +798,7 @@ async function renderLista(){
   tbody.innerHTML = regs.map(r=>`
     <tr>
       <td>${r.fecha || '—'}</td>
-      <td><span class="origen-tag ${r.origen==='HOTEL'?'origen-hotel':'origen-bar'}">${r.origen}</span></td>
+      <td><span class="origen-tag ${r.origen==='HOTEL'?'origen-hotel':(r.origen==='HOTEL Y PB'?'origen-ambos':'origen-bar')}">${r.origen}</span></td>
       <td>${escapeHtml(r.proveedor)}</td>
       <td>${escapeHtml(r.numero||'—')}</td>
       <td class="num">${r.moneda} ${Number(r.importe).toLocaleString('es-UY',{minimumFractionDigits:2})}</td>
