@@ -181,6 +181,13 @@
         </div>
       </div>
 
+      <label>Tipo de comprobante</label>
+      <select id="fTipo" onchange="mostrarAvisoTipo()">
+        <option value="Factura">Factura</option>
+        <option value="Nota de crédito">Nota de crédito</option>
+      </select>
+      <div id="tipoHint" class="sub" style="margin-top:4px;"></div>
+
       <div class="row2">
         <div>
           <label>Moneda</label>
@@ -618,7 +625,8 @@ async function leerFactura(base64, mediaType){
   "numero_factura": "número de factura, solo dígitos si es posible",
   "fecha": "fecha de emisión en formato AAAA-MM-DD (las facturas son recientes: el año actual es ${new Date().getFullYear()}; mirá bien el año impreso)",
   "moneda": "UYU o USD",
-  "importe_total": numero decimal del monto total de la factura, sin símbolo de moneda ni separador de miles
+  "importe_total": numero decimal del monto total de la factura, sin símbolo de moneda ni separador de miles (siempre positivo),
+  "tipo_comprobante": "nota_credito" si el documento es una NOTA DE CRÉDITO (dice "Nota de Crédito", "N/C", "NC", "e-Factura Nota de Crédito", "Nota de Crédito de e-Factura" o "Nota de Crédito de e-Ticket", o el tipo de CFE es 102 o 112); si no, "factura"
 }
 Si algún dato no es legible, poné null en ese campo. Si el nombre del proveedor aparece tachado o hay dos nombres (razón social y nombre de fantasía), priorizá la razón social asociada al RUT, no el nombre comercial.`;
 
@@ -664,7 +672,11 @@ function llenarFormulario(data){
   document.getElementById('fFecha').value = data.fecha || '';
   mostrarAvisoFecha();
   document.getElementById('fMoneda').value = (data.moneda === 'USD') ? 'USD' : 'UYU';
-  document.getElementById('fImporte').value = data.importe_total || '';
+  const esNC = String(data.tipo_comprobante || '').toLowerCase().indexOf('credito') !== -1 || String(data.tipo_comprobante || '').toLowerCase().indexOf('crédito') !== -1;
+  document.getElementById('fTipo').value = esNC ? 'Nota de crédito' : 'Factura';
+  const imp = parseFloat(data.importe_total);
+  document.getElementById('fImporte').value = isNaN(imp) ? '' : Math.abs(imp);
+  mostrarAvisoTipo();
   document.getElementById('fSector').value = '';
   document.getElementById('fMetodo').value = '';
   document.getElementById('fComentario').value = '';
@@ -690,6 +702,15 @@ function controlarFecha(v){
   const meses = (hoy.getFullYear() - d.getFullYear())*12 + (hoy.getMonth() - d.getMonth());
   if(meses > 1) return `La fecha de la factura (${txt}) no es de este mes ni del anterior.`;
   return '';
+}
+// ---- Notas de crédito: se guardan con el importe en negativo ----
+function esNotaCredito(){ return document.getElementById('fTipo').value === 'Nota de crédito'; }
+function mostrarAvisoTipo(){
+  const el = document.getElementById('tipoHint');
+  if(!el) return;
+  el.innerHTML = esNotaCredito()
+    ? '<span style="color:var(--warn-ink); font-weight:600;">⚠️ Es una nota de crédito: el importe se va a guardar en negativo.</span>'
+    : '';
 }
 function mostrarAvisoFecha(){
   const el = document.getElementById('fechaHint');
@@ -724,10 +745,10 @@ async function guardarFactura(){
     numero: document.getElementById('fNumero').value.trim(),
     fecha: document.getElementById('fFecha').value,
     moneda: document.getElementById('fMoneda').value,
-    importe: parseFloat(importe),
+    importe: Math.abs(parseFloat(importe)) * (esNotaCredito() ? -1 : 1),
     sector: document.getElementById('fSector').value.trim(),
     metodo: document.getElementById('fMetodo').value,
-    comentario: document.getElementById('fComentario').value.trim(),
+    comentario: (esNotaCredito() && !/nota de cr[eé]dito/i.test(document.getElementById('fComentario').value) ? 'Nota de crédito. ' : '') + document.getElementById('fComentario').value.trim(),
     foto: currentPhotoBase64 || null,
     creado: new Date().toISOString()
   };
